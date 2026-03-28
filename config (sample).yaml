@@ -1,0 +1,9 @@
+adapter: "enp2s0"
+
+fpath: "/media/Daten/xy/yz/file.ext"
+
+limitNetz: 10      # kB/s
+limitCPU: 30       # Prozent
+
+minAllg: 600       # Sekunden (10 min)
+minSleep: 300      # Sekunden (5 min)
