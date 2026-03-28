@@ -3,41 +3,10 @@
 import psutil
 import time
 import os
+import yaml
 
-''' Nützliches
-While-Schleife mit Tastatur beenden
-    https://stackoverflow.com/questions/13180941/how-to-kill-a-while-loop-with-a-keystroke
-Zahl runden:
-    https://www.programiz.com/python-programming/methods/built-in/round
-Zeit messen:
-    https://stackoverflow.com/questions/7370801/how-to-measure-elapsed-time-in-python
-kombiniert:
-    round(time.time())
-PC zu sleep:
-    https://gist.github.com/zkneupper/8c1faed1296ff0eb8923e6f2ee6fb74c
-    import os
-    os.system("systemctl suspend")
-Skript Pause / Sleep
-    time.sleep(zeit)
-Zeit seit Systemstart (nicht Standby-Aufwachen)
-    https://stackoverflow.com/questions/42471475/fastest-way-to-get-system-uptime-in-python-in-linux
-    time.time() - psutil.boot_time()
-print mit Farben
-    https://stackoverflow.com/questions/287871/how-to-print-colored-text-to-the-terminal
-    test = "\033[95mtest\ttest\t\033[96mhallo\t\033[0mtest"
-    print(test)
-    print(f"{bcolors.WARNING}Warning:")
-print ohne neue Zeile
-    https://stackoverflow.com/questions/493386/how-to-print-without-a-newline-or-space
-    print('xyz', end='')
-print('\033[94mxyz', end='')
-print('\033[0mxyz', end='')
-    
-
-
-For current Debian/Ubuntu, use
-apt-get install python3-pip
-to install pip3.
+''' 
+For current Debian/Ubuntu, use apt-get install python3-pip to install pip3.
 '''
 
 class bcolors:
@@ -54,18 +23,22 @@ class bcolors:
 if os.geteuid() != 0:
     exit("You need to have root privileges to run this script.\nPlease try again, this time using 'sudo'. Exiting.")
 
-
 print(f"Start...")
 
+# Pfad zur YAML bestimmen (gleiches Verzeichnis wie das Skript)
+base_path = os.path.dirname(os.path.abspath(__file__))
+config_path = os.path.join(base_path, "config.yaml")
+
+# YAML laden
+with open(config_path, "r", encoding="utf-8") as f:
+    config = yaml.safe_load(f)
+
 #Limits
-limitNetz = 10 #kB/s
-limitCPU = 30 # in %
+limitNetz = config["limitNetz"]
+limitCPU = config["limitCPU"]
 
 #Name Netzwerkadapter
-# "wlp4s0" WLAN
-# "enp2s0" LAN
-#adapter = "wlp4s0"
-adapter = "enp2s0"
+adapter = config["adapter"]
 
 #für Übertragungsrate:
 net_stat = psutil.net_io_counters(pernic=True, nowrap=True)[adapter]
@@ -74,8 +47,8 @@ net_out_1 = net_stat.bytes_sent
 net_lastSampleTime = round(time.time())-1
 
 #Wartezeiten
-minAllg = 10*60
-minSleep = 5*60
+minAllg = config["minAllg"]
+minSleep = config["minSleep"]
 
 sleep_lastSampleTime = round(time.time())
 
@@ -107,10 +80,8 @@ try:
         looptime = round(time.time())
         
         ##### CPU-Auslastung #####
-        # https://stackoverflow.com/questions/276052/how-to-get-current-cpu-and-ram-usage-in-python
         cpu = psutil.cpu_percent()
         #print(f"CPU-Auslastung {cpu}")
-        # CPU-Auslastung 7.3
         
         if cpu <= limitCPU:
             pass #Zeit wird nicht verändert
@@ -126,27 +97,15 @@ try:
         print(str(looptime - zeitCPU).ljust(10), end='')
         
         ##### Netzwerk-Übertragungsrate #####
-        # https://stackoverflow.com/questions/62020140/psutil-network-monitoring-script
-        #inf = "wlp4s0"
-        #net_stat = psutil.net_io_counters(pernic=True, nowrap=True)[adapter]
-        #net_in_1 = net_stat.bytes_recv
-        #net_out_1 = net_stat.bytes_sent
-        #time.sleep(1)
         net_stat = psutil.net_io_counters(pernic=True, nowrap=True)[adapter]
         net_in_2 = net_stat.bytes_recv
         net_out_2 = net_stat.bytes_sent
-        
-        #net_in = round((net_in_2 - net_in_1) / 1024 / 1024, 3) #MB/s
-        #net_out = round((net_out_2 - net_out_1) / 1024 / 1024, 3) #MB/s
-        #net_in = round((net_in_2 - net_in_1) / 1024, 3) #kB/s
-        #net_out = round((net_out_2 - net_out_1) / 1024, 3) #kB/s
-        #print(f"Current net-usage: IN: {net_in} MB/s, OUT: {net_out} MB/s")
-        # IN: 0.0 MB/s, OUT: 0.0 MB/s
-        
+             
         net_in_total = (net_in_2 - net_in_1) / 1024 #kB/s
         net_out_total = (net_out_2 - net_out_1) / 1024 #kB/s
         net_in_per_second = round(net_in_total/(looptime - net_lastSampleTime),0)
         net_out_per_second = round(net_out_total/(looptime - net_lastSampleTime),0)
+        #print(f"Current net-usage: IN: {net_in_per_second} MB/s, OUT: {net_out_per_second} MB/s")
         
         net_in_1 = net_in_2
         net_out_1 = net_out_2
@@ -167,7 +126,7 @@ try:
         
         ##### Prüfung, ob Datei geöffnet #####
         # Benötigt sudo: Test, ob Datei geöffnet
-        fpath = "/media/Daten/Freigabe/file.ext"
+        fpath = config["fpath"]
         booltmp = False
         for proc in psutil.process_iter():
             try:
@@ -183,7 +142,6 @@ try:
         if booltmp:
             zeitDatei = looptime
             
-            
         if looptime - zeitDatei >= minAllg:
             boolDatei = True
             print(f"{bcolors.OKGREEN}", end='')
@@ -194,9 +152,9 @@ try:
         
         ##### Zeit seit StandBy #####
         ### Versuch, letzten StandBy zu erkennen:
-        # Wenn die Schleife für 5 Minuten nicht lief, dann vermutlich im StandBy
+        # Wenn die Schleife für 30 Sekunden nicht lief, dann vermutlich im StandBy
         
-        if looptime - sleep_lastSampleTime >= 300:
+        if looptime - sleep_lastSampleTime >= 30:
             # war im StandBy
             zeitSleep = looptime
             zeitNetz = looptime
@@ -224,12 +182,7 @@ try:
                 time.sleep(1)
             os.system("systemctl suspend")
         
-        
         time.sleep(10)
-        
-        
-        
-
-
+  
 except KeyboardInterrupt:
     pass

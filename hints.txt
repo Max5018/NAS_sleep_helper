@@ -1,0 +1,36 @@
+Nützliches:
+
+While-Schleife mit Tastatur beenden
+    https://stackoverflow.com/questions/13180941/how-to-kill-a-while-loop-with-a-keystroke
+Zahl runden:
+    https://www.programiz.com/python-programming/methods/built-in/round
+Zeit messen:
+    https://stackoverflow.com/questions/7370801/how-to-measure-elapsed-time-in-python
+kombiniert:
+    round(time.time())
+PC zu sleep:
+    https://gist.github.com/zkneupper/8c1faed1296ff0eb8923e6f2ee6fb74c
+    import os
+    os.system("systemctl suspend")
+Skript Pause / Sleep
+    time.sleep(zeit)
+Zeit seit Systemstart (nicht Standby-Aufwachen)
+    https://stackoverflow.com/questions/42471475/fastest-way-to-get-system-uptime-in-python-in-linux
+    time.time() - psutil.boot_time()
+print mit Farben
+    https://stackoverflow.com/questions/287871/how-to-print-colored-text-to-the-terminal
+    test = "\033[95mtest\ttest\t\033[96mhallo\t\033[0mtest"
+    print(test)
+    print(f"{bcolors.WARNING}Warning:")
+print ohne neue Zeile
+    https://stackoverflow.com/questions/493386/how-to-print-without-a-newline-or-space
+    print('xyz', end='')
+print('\033[94mxyz', end='')
+print('\033[0mxyz', end='')
+
+
+##### Netzwerk-Übertragungsrate #####
+# https://stackoverflow.com/questions/62020140/psutil-network-monitoring-script
+
+##### CPU-Auslastung #####
+# https://stackoverflow.com/questions/276052/how-to-get-current-cpu-and-ram-usage-in-python
